@@ -63,12 +63,27 @@ async def handler(event):
     except Exception:
         await client.send_message(contact_id, "Извини, я сейчас не могу ответить, но обязательно напишу позже!")
 
+async def start_bot():
+    # Проверяем, есть ли уже сохранённая сессия
+    if os.path.exists('session.session'):
+        # Если есть, просто подключаемся без кода
+        await client.start(phone=PHONE)
+    else:
+        # Если сессии нет, берём код из переменной окружения
+        auth_code = os.environ.get('AUTH_CODE')
+        if not auth_code:
+            raise ValueError(
+                "❌ Нет сохранённой сессии и не задана AUTH_CODE.\n"
+                "Для первого запуска добавь переменную AUTH_CODE с кодом, который придёт в Telegram."
+            )
+        await client.start(phone=PHONE, code_callback=lambda: auth_code)
+    print("✅ Секретарь запущен и слушает сообщения...")
+    await client.run_until_disconnected()
+
 def run_bot():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(client.start(phone=PHONE))
-    print("✅ Секретарь запущен и слушает сообщения...")
-    loop.run_until_complete(client.run_until_disconnected())
+    loop.run_until_complete(start_bot())
 
 thread = threading.Thread(target=run_bot)
 thread.start()
